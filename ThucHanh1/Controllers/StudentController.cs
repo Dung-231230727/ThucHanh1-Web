@@ -54,29 +54,39 @@ namespace ThucHanh1.Controllers
         [HttpPost]
         public async Task<IActionResult> Create(Student s, IFormFile? ProfileImage)
         {
-            if (ProfileImage != null && ProfileImage.Length > 0)
+            if (ModelState.IsValid)
             {
-                string uniqueFileName = Guid.NewGuid().ToString() + "_" + ProfileImage.FileName;
-                string uploadFolder = Path.Combine(hostingEnvironment.WebRootPath, "images");
-                string filePath = Path.Combine(uploadFolder, uniqueFileName);
-                if (!Directory.Exists(uploadFolder))
+                if (ProfileImage != null && ProfileImage.Length > 0)
                 {
-                    Directory.CreateDirectory(uploadFolder);
+                    string uniqueFileName = Guid.NewGuid().ToString() + "_" + ProfileImage.FileName;
+                    string uploadFolder = Path.Combine(hostingEnvironment.WebRootPath, "images");
+                    string filePath = Path.Combine(uploadFolder, uniqueFileName);
+                    if (!Directory.Exists(uploadFolder))
+                    {
+                        Directory.CreateDirectory(uploadFolder);
+                    }
+
+                    using (var fileStream = new FileStream(filePath, FileMode.Create))
+                    {
+                        await ProfileImage.CopyToAsync(fileStream);
+                    }
+
+                    s.ProfilePicture = uniqueFileName;
                 }
 
-                using (var fileStream = new FileStream(filePath, FileMode.Create))
-                {
-                    await ProfileImage.CopyToAsync(fileStream);
-                }
-
-                s.ProfilePicture = uniqueFileName;
+                s.Id = listStudents.Last<Student>().Id + 1;
+                listStudents.Add(s);
+                return View("Index", listStudents);
             }
-
-
-
-            s.Id = listStudents.Last<Student>().Id + 1;
-            listStudents.Add(s);
-            return View("Index", listStudents);
+            ViewBag.AllGenders = Enum.GetValues(typeof(Gender)).Cast<Gender>().ToList();
+            ViewBag.AllBranches = new List<SelectListItem>()
+            {
+            new SelectListItem { Text = "IT", Value = "1" },
+            new SelectListItem { Text = "BE", Value = "2" },
+            new SelectListItem { Text = "CE", Value = "3" },
+            new SelectListItem { Text = "EE", Value = "4" }
+            };
+            return View();
         }
     }
 }
